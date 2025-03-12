@@ -8,7 +8,7 @@ M.list = core.list
 M.options = config.options
 
 M.setup = function(opts)
-    M.options = vim.tbl_deep_extend("force", M.options, opts or {})
+    config.options = vim.tbl_deep_extend("force", M.options, opts or {})
 end
 
 return M
