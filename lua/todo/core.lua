@@ -129,20 +129,26 @@ function M.list()
         if lastline > new_lastline then
             local extmarks = vim.api.nvim_buf_get_extmarks(bufr, ns_id, {firstline, 0}, {lastline - 1, 0}, {details = true})
 
-            local even_half = #extmarks / 2
-            local odd_half = math.ceil(#extmarks / 2)
+            if next(extmarks) ~= nil and #extmarks ~= 1 then
+                local even_half = #extmarks / 2
+                local odd_half = math.ceil(#extmarks / 2)
 
-            local line_diff = lastline - new_lastline
+                local line_diff = lastline - new_lastline
 
-            if #extmarks % 2 == 0 then
-                for i = 1, even_half + math.abs(even_half - line_diff) do
-                    local id = extmarks[i][1]
-                    vim.api.nvim_buf_del_extmark(bufr, ns_id, id)
-                end
-            else
-                for i = 1, odd_half + math.abs(odd_half - line_diff) do
-                    local id = extmarks[i][1]
-                    vim.api.nvim_buf_del_extmark(bufr, ns_id, id)
+                if #extmarks % 2 == 0 then
+                    for i = 1, even_half + math.abs(even_half - line_diff) do
+                        local id = extmarks[i]
+                        if id then
+                            vim.api.nvim_buf_del_extmark(bufr, ns_id, id[1])
+                        end
+                    end
+                else
+                    for i = 1, odd_half + math.abs(odd_half - line_diff) do
+                        local id = extmarks[i]
+                        if id then
+                            vim.api.nvim_buf_del_extmark(bufr, ns_id, id[1])
+                        end
+                    end
                 end
             end
         end
