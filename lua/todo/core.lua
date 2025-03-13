@@ -33,6 +33,18 @@ end
 
 function M.list()
     local todos = read_todos()
+
+    local low_pending = 1
+
+    for i, val in ipairs(todos) do
+        if val.done then
+            local x = todos[low_pending]
+            todos[low_pending] = todos[i]
+            todos[i] = x
+            low_pending = low_pending + 1
+        end
+    end
+
     local extmark_cache = {}
 
     if #todos == 0 then
