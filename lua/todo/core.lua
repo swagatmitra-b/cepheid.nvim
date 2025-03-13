@@ -140,8 +140,9 @@ function M.list()
 
         if lastline > new_lastline then
             local extmarks = vim.api.nvim_buf_get_extmarks(bufr, ns_id, {firstline, 0}, {lastline - 1, 0}, {details = true})
+            local all_extmarks = vim.api.nvim_buf_get_extmarks(bufr, ns_id, {0, 0}, {-1, -1}, {details = false})
 
-            if next(extmarks) ~= nil and #extmarks ~= 1 then
+            if next(extmarks) ~= nil and (#extmarks ~= 1 or (#extmarks == 1 and extmarks[1][1] == all_extmarks[#all_extmarks][1])) then
                 local even_half = #extmarks / 2
                 local odd_half = math.ceil(#extmarks / 2)
 
