@@ -1,10 +1,12 @@
 local config = require("todo.config")
+local utils = require("todo.utils")
 
 local M = {}
 
-local path = vim.fn.stdpath("data") .. "/todo_list.json"
+local todo_path = vim.fn.stdpath("data") .. "/todo.json"
+local lookup_path = vim.fn.stdpath("data") .. "/todo_lookups.json"
 
-local function read_todos()
+local function read(path)
     local file = io.open(path, "r")
     if not file then return {} end
     local content = file:read("*a")
@@ -12,10 +14,10 @@ local function read_todos()
     return vim.fn.json_decode(content) or {}
 end
 
-local function write_todos(todos)
+local function write(path, data)
     local file = io.open(path, "w")
     if file then
-        file:write(vim.fn.json_encode(todos))
+        file:write(vim.fn.json_encode(data))
         file:close()
     end
 end
@@ -23,61 +25,42 @@ end
 function M.add()
     vim.ui.input({ prompt = "New TODO: " }, function(input)
         if input and input ~= "" then
-            local todos = read_todos()
-            table.insert(todos, { text = input, done = false })
-            write_todos(todos)
-            print("TODO added: " .. input)
+            local list_name, text = utils.get_list_name(input)
+            if list_name == nil then
+                print("Please provide a list name.")
+                return
+            end
+            local lists = read(lookup_path)
+            local todos = read(todo_path)
+            if lists[list_name] == nil then
+                lists[list_name] = true
+                todos[list_name] = {}
+                write(lookup_path, lists)
+            end
+            table.insert(todos[list_name], { text = text, done = false })
+            write(todo_path, todos)
+            print("TODO added to " .. list_name .. ": " .. text)
         end
     end)
 end
 
-function M.list()
-    local todos = read_todos()
-
+local todo = function(lists, list_name, todos)
     local low_pending = 1
 
-    for i, val in ipairs(todos) do
-        if val.done then
-            local x = todos[low_pending]
-            todos[low_pending] = todos[i]
-            todos[i] = x
-            low_pending = low_pending + 1
+    if config.options.sort_pending then
+        for i, val in ipairs(todos) do
+            if val.done then
+                local x = todos[low_pending]
+                todos[low_pending] = todos[i]
+                todos[i] = x
+                low_pending = low_pending + 1
+            end
         end
     end
 
     local extmark_cache = {}
 
-    if #todos == 0 then
-        print("No TODOs found.")
-        return
-    end
-
-    local width = math.floor(vim.o.columns * config.options.window.width)
-    local height = math.floor(vim.o.lines * config.options.window.height)
-    local row = math.floor((vim.o.lines - height) / 2)
-    local col = math.floor((vim.o.columns - width) / 2)
-
-    local buf = vim.api.nvim_create_buf(false, true)
-    local win = vim.api.nvim_open_win(buf, true, {
-        relative = "editor",
-        width = width,
-        height = height,
-        row = row,
-        col = col,
-        style = "minimal",
-        border = config.options.window.border
-    })
-
-    vim.api.nvim_buf_set_option(buf, "relativenumber", false)
-    vim.api.nvim_buf_set_option(buf, "number", true)
-
-    vim.api.nvim_create_autocmd({"InsertEnter","InsertLeave"},{
-        buffer = buf,
-        callback = function()
-            vim.api.nvim_win_set_option(win, "relativenumber", false)
-            vim.api.nvim_win_set_option(win, "number", true)
-        end,
-    })
+    local buf, win = utils.create_buffer()
 
     local ns_id = vim.api.nvim_create_namespace("immutable_text")
 
@@ -125,7 +108,8 @@ function M.list()
                     table.insert(new_todos, {done = false, text = todo})
                 end
             end
-            write_todos(new_todos)
+            lists[list_name] = new_todos
+            write(todo_path, lists)
         end
     })
 
@@ -206,6 +190,87 @@ function M.list()
         extmark_cache[line_num] = ext_id
 
     end,{buffer=buf,nowait=true,noremap=true,silent=true})
+end
+
+function M.list()
+    local todos = read(todo_path)
+
+    if next(todos) == nil then
+        print("No TODOs found.")
+        return
+    end
+
+    local keys = {}
+    for list, _ in pairs(todos) do
+        table.insert(keys, list)
+    end
+
+    table.sort(keys)
+
+    local buf, win  = utils.create_buffer()
+    local iter_count = 1
+
+    for _, list in ipairs(keys)  do
+        vim.api.nvim_buf_set_lines(buf, iter_count - 1, iter_count - 1, false, { list })
+        iter_count = iter_count + 1
+    end
+
+    vim.keymap.set("n", config.options.keys.enter_list, function()
+        local cursor_pos = vim.api.nvim_win_get_cursor(0)
+        local line_num = cursor_pos[1]
+
+        local list_name = vim.api.nvim_buf_get_lines(buf, line_num - 1, line_num, false)[1]
+
+        if todos[list_name] then
+            todo(todos, list_name, todos[list_name])
+        else
+            print("List with name " .. list_name .. " does not exist. If you have edited the name, please save and reopen the window.")
+        end
+
+    end,{ buffer = buf, nowait = true, noremap = true, silent = true })
+
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+        buffer = buf,
+        callback = function()
+            local buffer_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+            local lines = {}
+            for _, line in ipairs(buffer_lines) do
+                line = line:match("^%s*(.-)%s*$")
+                if line:match("^%S*$") then
+                    table.insert(lines, line)
+                end
+            end
+
+            local count = 0
+            for _, _ in pairs(todos) do
+                count = count + 1
+            end
+
+            if count == #lines - 1 then
+                local lists = read(lookup_path)
+                local i = 1
+                for _, key in ipairs(keys) do
+                    if key ~= lines[i] and lines[i] ~= "" then
+                        lists[lines[i]] = true
+                        todos[lines[i]] = todos[key]
+                        lists[key] = nil
+                        todos[key] = nil
+                    end
+                    if lines[i] == "" then
+                        lists[key] = nil
+                        todos[key] = nil
+                    end
+                    i = i + 1
+                end
+                write(todo_path, todos)
+                write(lookup_path, lists)
+            end
+        end
+    })
+
+    vim.keymap.set("n", config.options.keys.close, function()
+        vim.api.nvim_win_close(win, true)
+    end, { buffer = buf, nowait = true, noremap = true, silent = true })
 end
 
 vim.api.nvim_set_keymap("n", config.options.keys.add, "<CMD>lua require('todo').add()<CR>", { noremap = true, silent = true })

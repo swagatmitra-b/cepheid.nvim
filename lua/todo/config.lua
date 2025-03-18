@@ -1,6 +1,7 @@
 local M = {}
 
 M.options = {
+    sort_pending = false,
     window = {
         width = 0.5,
         height = 0.35,
@@ -10,7 +11,8 @@ M.options = {
         add = "<A-i>",
         list = "<A-l>",
         toggle_complete = "<leader>d",
-        close = "q"
+        close = "q",
+        enter_list = "<leader>d"
     }
 }
 
