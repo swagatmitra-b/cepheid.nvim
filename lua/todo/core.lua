@@ -262,6 +262,12 @@ function M.list()
                     end
                     i = i + 1
                 end
+                for key, _ in pairs(todos) do
+                    if next(key) == nil then
+                        lists[key] = nil
+                        todos[key] = nil
+                    end
+                end
                 write(todo_path, todos)
                 write(lookup_path, lists)
             end
