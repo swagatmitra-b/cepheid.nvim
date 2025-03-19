@@ -3,9 +3,9 @@
 This is a todo plugin. You can switch to the `plain` branch for a single list experience. The default `main` branch version
 allows you to create and manage multiple lists. 
 
-# Installation
+## Installation
 
-## lazy.nvim 
+### lazy.nvim 
 
 ```lua
     {
@@ -17,11 +17,11 @@ allows you to create and manage multiple lists.
         end
     }
 ```
-# Usage
+## Usage
 
-## `main` version
+### `main` version
 
-### Adding todos
+#### Adding todos
 
 When adding a new todo, it is necessary to specify the list by adding the list-name at the end of the input preceded by two
 dashes (`--listname`). If the list does not exist, it will be created. 
@@ -31,11 +31,11 @@ go swimming on fridays --march
 ```
 "go swimming on fridays" gets added to the `march` list.
 
-### Modifying todos
+#### Modifying todos
 
 Todos (and their list names) can be modified like regular text in a neovim buffer. 
 
-### Creating/Deleting lists
+#### Creating/Deleting lists
 
 Lists are created alongside their todos. They cannot be added from the list buffer.
 This is to prevent empty lists (lists with no todos) from being created.
@@ -43,11 +43,11 @@ This is to prevent empty lists (lists with no todos) from being created.
 To delete a list, you must remove the list-name from the line and exit the buffer (leaving the line blank).
 Deleting the line entirely will not work.
 
-## `plain` version
+### `plain` version
 
 Todos can be added, modified and deleted normally in the buffer.
 
-# Configuration
+## Configuration
 
 ```lua
 {
@@ -67,6 +67,6 @@ Todos can be added, modified and deleted normally in the buffer.
     }
 }
 ```
-# Contribution
+## Contribution
 
 Feel free to raise an issue or initiate a pull request.
