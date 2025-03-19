@@ -263,7 +263,7 @@ function M.list()
                     i = i + 1
                 end
                 for key, _ in pairs(todos) do
-                    if next(key) == nil then
+                    if next(todos[key]) == nil then
                         lists[key] = nil
                         todos[key] = nil
                     end
