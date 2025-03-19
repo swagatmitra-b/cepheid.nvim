@@ -157,7 +157,7 @@ local todo = function(lists, list_name, todos)
         vim.api.nvim_win_close(win, true)
     end, { buffer = buf, nowait = true, noremap = true, silent = true })
 
-    vim.keymap.set("n", config.options.keys.toggle_complete, function()
+    vim.keymap.set("n", config.options.keys.toggle_pending, function()
         local cursor_pos = vim.api.nvim_win_get_cursor(0)
         local line_num = cursor_pos[1]
 

@@ -10,7 +10,7 @@ M.options = {
     keys = {
         add = "<A-i>",
         list = "<A-l>",
-        toggle_complete = "<leader>d",
+        toggle_pending = "<leader>d",
         close = "q",
         enter_list = "<leader>d"
     }
